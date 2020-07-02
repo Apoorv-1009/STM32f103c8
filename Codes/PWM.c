@@ -23,7 +23,7 @@ void Timer_Initialize()
 	
 	TIM4->CCMR2 |=TIM_CCMR2_OC4PE;   //Pre-Load Enable
 	
-	TIM4->PSC = 72;
+	TIM4->PSC = 32;
 	TIM4->ARR = 1000;
 	TIM4->CCR4 = 250;   //Comment Line 
 	

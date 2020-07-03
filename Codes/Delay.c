@@ -1,3 +1,6 @@
+//This code doesnt work, it is here for reference purposes
+
+
 #include "stm32f10x.h"
 
 int myTicks = 0;

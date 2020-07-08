@@ -2,7 +2,6 @@
 
 float val = 0;
 volatile static uint32_t myTicks = 0;
-volatile static uint32_t mapped = 0;
 
 void SysTick_Handler(void)
 {

@@ -1,0 +1,104 @@
+//Uart without interrupts
+
+#include "stm32f10x.h"
+
+void UART_Initialize()
+{
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;   //UART1 Enable, Clk freq = 72Mhz
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;   //PortA Clock Enable
+	
+	/*
+	REMAPPING:
+	By Default, UART1 is set on PA9 AND PA10, if we wish to
+	move it to PB6 AND PB7, we need to remap it.
+	If we remap it, remember to enable PortB Clock
+	Page 175 of the Reference Manual talks about remaping
+	Refer to the AFIO Section of the Reference Manual for 
+	more details
+	AFIO->MAPR |= AFIO_MAPR_USART1_REMAP;
+	*/
+	
+	//Setting up PA9 (Tx) as Output: 
+	GPIOA->CRH |= GPIO_CRH_MODE9;   //Output (50Mhz)
+	GPIOA->CRH |= GPIO_CRH_CNF9_1;   //Alternate Function
+	GPIOA->CRH &= ~(GPIO_CRH_CNF9_0);   //Output Push-Pull
+	
+	//Setting up PA10 (Rx) as Input:
+	GPIOA->CRH &= ~(GPIO_CRH_MODE10);   //Input
+	GPIOA->CRH &= ~(GPIO_CRH_CNF10_1);   //Floating Input
+	GPIOA->CRH |= GPIO_CRH_CNF10_0;   
+	/*
+	!NOTE!: Input, Floating State is the default setting when
+	you start your mcu, so setting up PA10 is optional.
+	*/
+	
+	//Setting up Baud Rate:
+	USART1->BRR = 0x1D4C;   //0x1D4C = 7500
+	
+	//              Rx enable      Tx Enable     UART Enable
+	USART1->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
+	
+}
+
+
+int main()
+{
+	UART_Initialize();
+	volatile uint16_t temp;
+	while(1)
+	{
+		if(USART1->SR & USART_SR_RXNE)   //if Rx is not empty
+		{
+			temp = USART1->DR;   //Fetch the data recieved
+			
+			while(!(USART1->SR & USART_SR_TC));   //Check Status Register if Transmission is complete
+			
+		}
+	}
+	
+}
+
+
+
+
+
+
+```````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+//Uart with interrupts:
+
+#include "stm32f10x.h"
+
+void USART1_IRQHandler(void)
+{
+	//Check if we are here because of RxNE Interrupt
+	if(USART1->SR & USART_SR_RXNE)   //if Rx is not empty
+	{
+		char temp = USART1->DR;   //Fetch data received
+		//USART1->DR = temp;   //Send it back out
+		while(!(USART1->SR & USART_SR_TC));
+	}
+	
+	//Check if we are here because of TXEIE Interrupt
+	/*if(USART1->SR & USART_SR_TXE)   //if Rx is not empty
+	{
+		
+	}*/
+}
+
+void UART_Initialize()
+{
+	//Enable RxNE and TxE interrupts on USART side
+	USART1->CR1 |= USART_CR1_RXNEIE | USART_CR1_TXEIE;
+	
+	//Interrupt for Usart1 on NVIC side
+	NVIC_EnableIRQ(USART1_IRQn); 
+	
+	
+}
+
+int main()
+{
+	UART_Initialize();
+	
+}
+

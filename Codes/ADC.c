@@ -1,3 +1,4 @@
+//This Code is to read ADC values from a Joystick and display them thru PWM
 #include "stm32f10x.h"
 
 float val = 0;

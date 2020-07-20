@@ -1,3 +1,4 @@
+///This Code uses PWM to vary the brightness of an LED
 #include "stm32f10x.h"
 
 void Ports_Initialize()

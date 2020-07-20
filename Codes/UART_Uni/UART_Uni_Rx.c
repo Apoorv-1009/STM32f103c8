@@ -1,3 +1,4 @@
+//This Code is for sending pwm values, read from a joystick, to another STM32f103 via UART
 //Rx
 #include "stm32f10x.h"
 volatile int myTicks=0;

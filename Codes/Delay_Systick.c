@@ -1,3 +1,4 @@
+//This Code uses Systick Timers for creating a delay of 1ms to blink an LED
 #include "stm32f10x.h"
 volatile int myTicks = 0;
 

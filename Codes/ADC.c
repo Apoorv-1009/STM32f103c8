@@ -91,7 +91,7 @@ void Config(void)
 	delay_ms(1);
 	
 	ADC1->CR2 |= ADC_CR2_CAL;   //Run Calibration
-	while(ADC1->CR2 & ADC_CR2_CAL);   //The proper way to check for calibration*/
+	while(ADC1->CR2 & ADC_CR2_CAL);   //The proper way to check for calibration
 	delay_ms(5);
 	
 }

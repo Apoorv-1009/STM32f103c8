@@ -31,13 +31,13 @@ int main()
 		if(pressed)
 		{
 			GPIOC->BSRR |= (1 << 13);
-			GPIOC->BSRR &= (0 << (13+16));
+			//GPIOC->BSRR &= (0 << (13+16));
 		}
 		
 		else
 		{
 			GPIOC->BSRR |= (1 << (13+16));
-			GPIOC->BSRR &= (0 << 13);
+			//GPIOC->BSRR &= (0 << 13);
 		}
 	}
 	

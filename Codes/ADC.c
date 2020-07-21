@@ -49,11 +49,11 @@ void Config(void)
 	SystemCoreClockUpdate();
 	SysTick_Config(SystemCoreClock/1000);
 	
-		//SET TIMERS FOR PWM:
+	//SET TIMERS FOR PWM:
 	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;   //Enable Timer 4
 	TIM4->CCER |= TIM_CCER_CC4E;   //Output Enable
 	TIM4->CR1 |= TIM_CR1_ARPE;   //Shadow Registers
-	//Pwm setup:
+	//PWM setup:
 	TIM4->CCMR2 |=TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4M_2;   //Set to PWM Mode 1
 	
 	TIM4->CCMR2 |=TIM_CCMR2_OC4PE;   //Pre-Load Enable

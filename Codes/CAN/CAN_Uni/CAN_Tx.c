@@ -201,7 +201,7 @@ int main( )
 	{
     //if (TALKER) {
 		//GPIOE->BSRR = 1<<9;   //LED ON for observation on MSO   
-		delay(72000000);   //1 Second Delay
+		delay(8000000);   //1 Second Delay
 		test( );
 		CAN1_Tx_mess( );
 

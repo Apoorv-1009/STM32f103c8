@@ -1,6 +1,6 @@
 //Code uses CAN protocol to Transmit data to another Bluepill to blink LED
 //Setup:
-//CAN pins: Tx->PD1, Rx->PD0
+//CAN pins: Tx->PA12, Rx->PA11
 //LED: PC13 (onboard)
 
 #include "stm32f10x.h"
@@ -37,17 +37,29 @@ void test( ) //Flash LEDs to test
 
 void initCAN1( )
 {
-	RCC->APB1ENR |= 1<<25;	       // enable clock for CAN1
-	RCC->APB2ENR |= 0x01;            // enable clock for Alternate Function
-	RCC->APB2ENR |= 1<<5;           // enable clock for GPIO D
+	RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;	       // enable clock for CAN1
+	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;            // enable clock for Alternate Function
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;           // enable clock for GPIO C
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;           // enable clock for GPIO A
 
-	AFIO->MAPR   &= ~(3<<13);     // reset CAN remap
+	/*AFIO->MAPR   &= ~(3<<13);     // reset CAN remap
 	AFIO->MAPR   |= 3<<13;            //   set CAN remap, use PD0, PD1
 
 	GPIOD->CRL &= ~(0x0F<<0);
 	GPIOD->CRL |=  (0x08<<0);          // CAN RX pin PD.0 Input Push Pull   
 	GPIOD->CRL &= ~(0x0F<<4);
 	GPIOD->CRL |=  (0x0B<<4);         //TX pin PD.1 AF Output Push Pull 
+	*/
+	
+	
+	
+	GPIOA->CRH |= GPIO_CRH_MODE12_0;   //PA12 as AF Output Push Pull
+	GPIOA->CRH |= GPIO_CRH_CNF12_1;
+	
+	GPIOA->CRH |= GPIO_CRH_CNF11_0;   //PA11 as Floating Input (reset state)
+	GPIOA->CRH &= ~(GPIO_CRH_CNF11_1);
+	GPIOA->CRH &=~(GPIO_CRH_MODE11);   //PA11 Input Mode (reset state)
+	
 
 	CAN1->MCR = 1;                            //Initialisation Mode  	
 	CAN1->MCR |= 1<<4;                     //NART: No Automatic Retransmission  
@@ -209,3 +221,4 @@ int main( )
 	  //GPIOE->BSRR = 1<<(9+16);  // LED OFF 
 	}				 			
 }
+

@@ -15,7 +15,7 @@
 #define DATA_FRAME       0
 #define REMOTE_FRAME     1
 
-void SystemInit( )   //called by start up code
+void GPIO_Initialize( )   //called by start up code
 {
 	RCC->APB2ENR |= (1<<4);   // Set clock for Port C
 	GPIOC->CRH |= ( (1<<20) | (1<<21) );   //Output (50 Mhz) 
@@ -29,9 +29,9 @@ void delay(int count)
 void test( ) //Flash LEDs to test
 {
 		GPIOC->BSRR = 1<<13;   //Set Pin13 High
-		delay(100000);   
+		delay(10000);   
 		GPIOC->BSRR = 1<< (13 + 16);   //Set Pin13 Low
-		delay(100000);   
+		delay(10000);   
 }
 
 
@@ -192,6 +192,7 @@ void CAN_rdMsg ( CAN_msg *msg)  {
 
 int main( )
 {
+	GPIO_Initialize();
 	initCAN1( );  
   /*if (!TALKER) {
 	     init_filters(); 
@@ -204,7 +205,7 @@ int main( )
 		delay(8000000);   //1 Second Delay
 		test( );
 		CAN1_Tx_mess( );
-
+	
 	  //GPIOE->BSRR = 1<<(9+16);  // LED OFF 
 	}				 			
 }

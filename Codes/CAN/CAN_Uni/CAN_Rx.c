@@ -1,6 +1,6 @@
-//Code uses CAN protocol to Recieve data to another Bluepill to blink the onboard led PC13
+//Code uses CAN protocol to Recieve data from another Bluepill to blink the onboard led PC13
 //Setup:
-//CAN pins: Tx->PD1, Rx->PD0
+//CAN pins: Tx->PA12, Rx->PA11
 //LED: PC13 (onboard)
 
 #include "stm32f10x.h"
@@ -29,29 +29,43 @@ void delay(int count)
 void test( ) //Flash LEDs to test
 {
 		GPIOC->BSRR = (1<<13);   //Set Pin13 High
-		delay(10000);   
+		delay(8000000);   //1 Second Delay  
 		GPIOC->BSRR = 1<<(13 + 16);   //Set Pin13 Low
-		delay(10000); 
+		delay(8000000); 
 }
 void initCAN1( )
 {
-	RCC->APB1ENR |= 1<<25;	       // enable clock for CAN1
-	RCC->APB2ENR |= 0x01;            // enable clock for Alternate Function
-	RCC->APB2ENR |= 1<<5;           // enable clock for GPIO D
+	RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;	       // enable clock for CAN1
+	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;            // enable clock for Alternate Function
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;           // enable clock for GPIO C
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;           // enable clock for GPIO A
 
-	AFIO->MAPR   &= ~(3<<13);     // reset CAN remap
+	/*AFIO->MAPR   &= ~(3<<13);     // reset CAN remap
 	AFIO->MAPR   |= 3<<13;            //   set CAN remap, use PD0, PD1
 
 	GPIOD->CRL &= ~(0x0F<<0);
 	GPIOD->CRL |=  (0x08<<0);          // CAN RX pin PD.0 Input Push Pull   
 	GPIOD->CRL &= ~(0x0F<<4);
 	GPIOD->CRL |=  (0x0B<<4);         //TX pin PD.1 AF Output Push Pull 
+	*/
+	
+	
+	GPIOA->CRH |= GPIO_CRH_MODE12_0;   //PA12 as AF Output Push Pull
+	GPIOA->CRH |= GPIO_CRH_CNF12_1;
+	
+	GPIOA->CRH |= GPIO_CRH_CNF11_0;   //PA11 as Floating Input (reset state)
+	GPIOA->CRH &= ~(GPIO_CRH_CNF11_1);
+	GPIOA->CRH &=~(GPIO_CRH_MODE11);   //PA11 Input Mode (reset state)
+	
+	
 
 	CAN1->MCR = 1;                            //Initialisation Mode  	
 	CAN1->MCR |= 1<<4;                     //NART: No Automatic Retransmission  
 	CAN1->IER =  1<<1;                       // FIFO 0 msg pending
 	CAN1->BTR =  0x031C0009;              //see Q2
 	CAN1->MCR &= 0;                      //Reset INRQ, Normal Operating Mode Started
+	
+	NVIC->ISER[0] |= (1 << 20);       // enable CAN1_Rx interrupt
 }																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																													
 #define Id0 0x1badcafe
 
@@ -152,7 +166,7 @@ CAN1 Receive code
 
 void CAN_rdMsg ( CAN_msg *msg)  
 {
-	int data[8];
+	int data[8], sum;
 	int i = 0;
   if ((CAN1->sFIFOMailBox[0].RIR & 0x4)==0) { //CAN_ID_EXT) == 0) { // Standard ID
     msg->format = STANDARD_FORMAT;
@@ -182,12 +196,7 @@ void CAN_rdMsg ( CAN_msg *msg)
   msg->data[7] = (unsigned int)0x000000FF & (CAN1->sFIFOMailBox[0].RDHR >> 24);
 	
 	for (i = 0; i < 8; i++) data[i] = msg->data[i];   //Entering Data
-	
-	int sum = 0;
-	for(i = 0; i < 8 ; i++)
-	{
-		sum = sum + (2^i)*(data[i]);
-	}
+	sum = data[8];
 	if(sum == 10)
 		test();
 		
@@ -210,7 +219,6 @@ int main( )
 	GPIO_Initialize();
 	initCAN1( );
 	init_filters();
-	NVIC->ISER[0] |= (1 << 20);       // enable CAN1_Rx interrupt
 	while (1) 
 		{			 
 		}			

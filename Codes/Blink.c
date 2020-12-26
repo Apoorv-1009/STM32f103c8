@@ -1,4 +1,4 @@
-//This Code is to blink the On-Board LED with 1ms Delay
+//This Code is to blink the On-Board LED with 1s Delay
 #include "stm32f10x.h"
 
 void Initialize()

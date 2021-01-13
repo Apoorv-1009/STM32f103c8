@@ -5,7 +5,7 @@
  Joystick: PA1(Ch1), PA2(Ch2)
  x->PA1   y->PA2
 
-			 Left     	    Right
+       Left           Right
  LED:  PA4            PA5
  PWM:  PB6            PB7
  */
@@ -42,11 +42,11 @@ void GPIO_Initialize()
 
 	//Setup PA1:
 	GPIOA->CRL &= ~(GPIO_CRL_MODE1_0 | GPIO_CRL_MODE1_1);   //INPUT Mode
-	GPIOA->CRL &= ~(GPIO_CRL_CNF1_0 | GPIO_CRL_CNF1_1); 	//Input Analog
+	GPIOA->CRL &= ~(GPIO_CRL_CNF1_0 | GPIO_CRL_CNF1_1);   //Input Analog
 
 	//Setup PA2:
 	GPIOA->CRL &= ~(GPIO_CRL_MODE2_0 | GPIO_CRL_MODE2_1);   //INPUT Mode  
-	GPIOA->CRL &= ~(GPIO_CRL_CNF2_0 | GPIO_CRL_CNF2_1);		//Input Analog
+	GPIOA->CRL &= ~(GPIO_CRL_CNF2_0 | GPIO_CRL_CNF2_1);   //Input Analog
 
 	//Setup PA4:
 	GPIOA->CRL |= GPIO_CRL_MODE4;   //OUTPUT Mode 50Mhz
@@ -101,8 +101,8 @@ void ADC_Initialize()
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;   //Enable ADC1 Clock
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;   //Enable DMA1 Clock
 
-	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0; //601.5 Sampling Rate for Channel 1
-	ADC1->SMPR2 |= ADC_SMPR2_SMP2_2 | ADC_SMPR2_SMP2_1 | ADC_SMPR2_SMP2_0; //601.5 Sampling Rate for Channel 2
+	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0;   //601.5 Sampling Rate for Channel 1
+	ADC1->SMPR2 |= ADC_SMPR2_SMP2_2 | ADC_SMPR2_SMP2_1 | ADC_SMPR2_SMP2_0;   //601.5 Sampling Rate for Channel 2
 
 	ADC1->SQR1 |= 1 << 20;   //Set length of 2 ADC conversions
 	//Set channel you want to convert in the sequence registers:
@@ -114,12 +114,12 @@ void ADC_Initialize()
 
 	//DMA Settings:
 	DMA1_Channel1->CPAR = (uint32_t) (&(ADC1->DR));   //Peripheral to READ from
-	DMA1_Channel1->CMAR = (uint32_t) samples; //Base Address of memory to WRITE to
+	DMA1_Channel1->CMAR = (uint32_t) samples;   //Base Address of memory to WRITE to
 	DMA1_Channel1->CNDTR = 2;   //Define number of times to transfer data
 
 	DMA1_Channel1->CCR |= DMA_CCR1_CIRC;   //Enable Circular Mode
 	DMA1_Channel1->CCR |= DMA_CCR1_MINC;   //Enable Memory Increment Mode
-	DMA1_Channel1->CCR |= DMA_CCR1_PSIZE_0; //Define Peripheral Data size as 16 bits
+	DMA1_Channel1->CCR |= DMA_CCR1_PSIZE_0;   //Define Peripheral Data size as 16 bits
 	DMA1_Channel1->CCR |= DMA_CCR1_MSIZE_0;   //Define Memory size as 16 bits
 
 	DMA1_Channel1->CCR |= DMA_CCR1_EN;   //Enable DMA1

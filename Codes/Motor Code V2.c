@@ -6,7 +6,7 @@
  Joystick: PA1(Ch1), PA2(Ch2)
  x->PA1   y->PA2
 
-			 Left     	    Right
+       Left           Right
  LED:  PA4            PA5
  PWM:  PB6            PB7
  */
@@ -43,11 +43,11 @@ void GPIO_Initialize()
 
 	//Setup PA1:
 	GPIOA->CRL &= ~(GPIO_CRL_MODE1);   //INPUT Mode
-	GPIOA->CRL &= ~(GPIO_CRL_CNF1); 	//Input Analog
+	GPIOA->CRL &= ~(GPIO_CRL_CNF1);   //Input Analog
 
 	//Setup PA2:
 	GPIOA->CRL &= ~(GPIO_CRL_MODE2);   //INPUT Mode  
-	GPIOA->CRL &= ~(GPIO_CRL_CNF2);		//Input Analog
+	GPIOA->CRL &= ~(GPIO_CRL_CNF2);   //Input Analog
 	
 	//Setup PA3:
 	GPIOA->CRL &= ~(GPIO_CRL_MODE3);   //INPUT Mode
@@ -108,25 +108,25 @@ void ADC_Initialize()
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;   //Enable ADC1 Clock
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;   //Enable DMA1 Clock
 
-	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0; //601.5 Sampling Rate for Channel 1
-	ADC1->SMPR2 |= ADC_SMPR2_SMP2_2 | ADC_SMPR2_SMP2_1 | ADC_SMPR2_SMP2_0; //601.5 Sampling Rate for Channel 2
+	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0;   //601.5 Sampling Rate for Channel 1
+	ADC1->SMPR2 |= ADC_SMPR2_SMP2_2 | ADC_SMPR2_SMP2_1 | ADC_SMPR2_SMP2_0;   //601.5 Sampling Rate for Channel 2
 
 	ADC1->SQR1 |= 1 << 20;   //Set length of 2 ADC conversions
 	//Set channel you want to convert in the sequence registers:
-	ADC1->SQR3 |= ADC_SQR3_SQ1_0;   //Channel 1, Sequence 1
-	ADC1->SQR3 |= ADC_SQR3_SQ2_1;	  //Channel 2, Sequence 2
+	ADC1->SQR3 |= ADC_SQR3_SQ1_0;	//Channel 1, Sequence 1
+	ADC1->SQR3 |= ADC_SQR3_SQ2_1;   //Channel 2, Sequence 2
 
 	ADC1->CR1 |= ADC_CR1_SCAN;   //Enable Scan Mode
 	ADC1->CR2 |= ADC_CR2_DMA;   //Enable DMA Mode
 
 	//DMA Settings:
 	DMA1_Channel1->CPAR = (uint32_t) (&(ADC1->DR));   //Peripheral to READ from
-	DMA1_Channel1->CMAR = (uint32_t) samples; //Base Address of memory to WRITE to
+	DMA1_Channel1->CMAR = (uint32_t) samples;   //Base Address of memory to WRITE to
 	DMA1_Channel1->CNDTR = 2;   //Define number of times to transfer data
 
 	DMA1_Channel1->CCR |= DMA_CCR1_CIRC;   //Enable Circular Mode
 	DMA1_Channel1->CCR |= DMA_CCR1_MINC;   //Enable Memory Increment Mode
-	DMA1_Channel1->CCR |= DMA_CCR1_PSIZE_0; //Define Peripheral Data size as 16 bits
+	DMA1_Channel1->CCR |= DMA_CCR1_PSIZE_0;   //Define Peripheral Data size as 16 bits
 	DMA1_Channel1->CCR |= DMA_CCR1_MSIZE_0;   //Define Memory size as 16 bits
 
 	DMA1_Channel1->CCR |= DMA_CCR1_EN;   //Enable DMA1
@@ -158,8 +158,8 @@ void Drive(int DL, int DR, int oct0, int a, int b, int oct1, int p, int q,int X,
 	else
 		GPIOA->BRR |= 1 << 5;   //Turn off RIGHT LED
 
-	TIM4->CCR1 = (uint32_t) abs(4095 * oct0 - abs(X * a) - abs(Y * b)); //Left PWM
-	TIM4->CCR2 = (uint32_t) abs(4095 * oct1 - abs(X * p) - abs(Y * q)); //Right PWM
+	TIM4->CCR1 = (uint32_t) abs(4095 * oct0 - abs(X * a) - abs(Y * b));   //Left PWM
+	TIM4->CCR2 = (uint32_t) abs(4095 * oct1 - abs(X * p) - abs(Y * q));   //Right PWM
 
 	//delay_ms(5);
 }

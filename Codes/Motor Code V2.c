@@ -15,7 +15,7 @@
 #include "stdlib.h"
 
 volatile int myTicks = 0;
-volatile uint16_t samples[2] ={ 0, 0 };
+volatile uint16_t samples[2] = { 0, 0 };
 //x -> samples[0]
 //y -> samples[1]
 

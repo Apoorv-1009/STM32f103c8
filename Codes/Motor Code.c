@@ -4,34 +4,19 @@
  PWM LEDs: PB6(Ch1), PB7(Ch2)
  Joystick: PA1(Ch1), PA2(Ch2)
  x->PA1   y->PA2
-
        Left           Right
  LED:  PA4            PA5
  PWM:  PB6            PB7
  */
 
-#include "stm32f10x.h"
+#include "stm32f1xx.h"
 #include "stdlib.h"
+#include "main.h"
 
 volatile int myTicks = 0;
 volatile uint16_t samples[2] ={ 0, 0 };
 //x -> samples[0]
 //y -> samples[1]
-
-void SysTick_Initialize()
-{
-	SystemCoreClockUpdate();
-	SysTick_Config(SystemCoreClock / 1000);
-}
-void SysTick_Handler()
-{
-	myTicks++;
-}
-void delay_ms(int del)
-{
-	myTicks = 0;
-	while (myTicks < del);
-}
 
 void GPIO_Initialize()
 {
@@ -45,7 +30,7 @@ void GPIO_Initialize()
 	GPIOA->CRL &= ~(GPIO_CRL_CNF1_0 | GPIO_CRL_CNF1_1);   //Input Analog
 
 	//Setup PA2:
-	GPIOA->CRL &= ~(GPIO_CRL_MODE2_0 | GPIO_CRL_MODE2_1);   //INPUT Mode  
+	GPIOA->CRL &= ~(GPIO_CRL_MODE2_0 | GPIO_CRL_MODE2_1);   //INPUT Mode
 	GPIOA->CRL &= ~(GPIO_CRL_CNF2_0 | GPIO_CRL_CNF2_1);   //Input Analog
 
 	//Setup PA4:
@@ -86,7 +71,7 @@ void Timer_Initialize()
 	TIM4->CCMR1 |= (TIM_CCMR1_OC2M_2) | (TIM_CCMR1_OC2M_1);
 	TIM4->CCMR1 &= ~(TIM_CCMR1_OC2M_0);
 
-	TIM4->PSC = 1; //freq/1 = 72 Mhz
+	TIM4->PSC = 1; //freq/1 = 8 Mhz
 	TIM4->ARR = 4095;   //16 Bit value
 	TIM4->CCR1 = 0;
 	TIM4->CCR2 = 0;
@@ -97,6 +82,7 @@ void Timer_Initialize()
 
 void ADC_Initialize()
 {
+	GPIOA->BSRR |= 1 << 4 | 1 << 5;
 	RCC->CFGR |= RCC_CFGR_ADCPRE_DIV6;   //f/6 = 72/6 = 12 Mhz
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;   //Enable ADC1 Clock
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;   //Enable DMA1 Clock
@@ -117,29 +103,28 @@ void ADC_Initialize()
 	DMA1_Channel1->CMAR = (uint32_t) samples;   //Base Address of memory to WRITE to
 	DMA1_Channel1->CNDTR = 2;   //Define number of times to transfer data
 
-	DMA1_Channel1->CCR |= DMA_CCR1_CIRC;   //Enable Circular Mode
-	DMA1_Channel1->CCR |= DMA_CCR1_MINC;   //Enable Memory Increment Mode
-	DMA1_Channel1->CCR |= DMA_CCR1_PSIZE_0;   //Define Peripheral Data size as 16 bits
-	DMA1_Channel1->CCR |= DMA_CCR1_MSIZE_0;   //Define Memory size as 16 bits
+	DMA1_Channel1->CCR |= DMA_CCR_CIRC;   //Enable Circular Mode
+	DMA1_Channel1->CCR |= DMA_CCR_MINC;   //Enable Memory Increment Mode
+	DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0;   //Define Peripheral Data size as 16 bits
+	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_0;   //Define Memory size as 16 bits
 
-	DMA1_Channel1->CCR |= DMA_CCR1_EN;   //Enable DMA1
+	DMA1_Channel1->CCR |= DMA_CCR_EN;   //Enable DMA1
 	//!NOTE! Do NOT Enable DMA before you define all of its settings
 
 	ADC1->CR2 |= ADC_CR2_ADON;   //Enable ADC for the 1st time
 	ADC1->CR2 |= ADC_CR2_CONT;   //Set ADC to Continuous Mode
-	delay_ms(1);
+	//delay_ms(1);
 
 	//Turn on ADC for the 2nd time to acually turn it on:
 	ADC1->CR2 |= ADC_CR2_ADON;
-	delay_ms(1);
+	//delay_ms(1);
 
 	//Run Calibration:
 	ADC1->CR2 |= ADC_CR2_CAL;
-	delay_ms(2);
+	//delay_ms(2);
 }
 
-//        |Left    Right| |      Left PWM       |  |      Right PWM     | |  Values  |
-void Drive(int DL, int DR, int oct0, int a, int b, int oct1, int p, int q,int X, int Y)
+void Drive(int DL, int DR, int a, int b, int p, int q, int X, int Y)
 {
 	if (DL == 1)
 		GPIOA->BSRR |= 1 << 4;   //Turn on LEFT LED
@@ -151,10 +136,8 @@ void Drive(int DL, int DR, int oct0, int a, int b, int oct1, int p, int q,int X,
 	else
 		GPIOA->BRR |= 1 << 5;   //Turn off RIGHT LED
 
-	TIM4->CCR1 = (uint32_t) abs(4095 * oct0 - abs(X * a) - abs(Y * b));   //Left PWM
-	TIM4->CCR2 = (uint32_t) abs(4095 * oct1 - abs(X * p) - abs(Y * q));   //Right PWM
-
-	//delay_ms(5);
+	TIM4->CCR1 = (uint32_t) abs(abs(a*X) - abs(b*Y));   //Left PWM
+	TIM4->CCR2 = (uint32_t) abs(abs(p*X) - abs(q*Y));   //Right PWM
 }
 
 int mapp(float k, float l, float h, float L, float H)
@@ -166,109 +149,77 @@ int read(int k)
 {
 	int val = 0;
 	val = samples[k];
-	val = mapp(val, 0, 4095, -4095, 4095);
+	if(k == 0)
+		val = mapp(val, 0, 4095, -4095, 4095);
 
-	if (abs(val) < 400)
+	else
+	{
+		val = mapp(val, 0, 4095, 4095, -4095);
+	}
+
+	if (abs(val) < 100)
 		val = 0;
-
+	
 	if (val < -3900)
 		val = -4095;
 
 	if (val > 3900)
 		val = 4095;
-
+	/**/
 	return val;
 }
 
 void MotorCode(int x, int y)
 {
+//void Drive(int DL, int DR, int a, int b, int p, int q, int X, int Y)
 
 	if (abs(x) < 20 && abs(y) < 20)   //No Motion
-		Drive(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		Drive(0,0,0,0,0,0,0,0);
 
-	else if (abs(x) < 10 && y < 0)   //Full Forward
-		Drive(1, 1, 0, 0, 1, 0, 0, 1, x, y);
+	else if(abs(x) < 10 && y < 0)   //Full Backward
+		Drive(0,0,0,1,0,1,x,y);
 
-	else if (abs(x) < 10 && y > 0)   //Full Backward
-		Drive(0, 0, 0, 0, 1, 0, 0, 1, x, y);
+	else if(abs(x) < 10 && y > 0)   //Full Forward
+		Drive(1,1,0,1,0,1,x,y);
 
-	else if (x < 0 && abs(y) <= 20)   //Spot Turn Left
-		Drive(0, 1, 0, 1, 0, 0, 1, 0, x, y);
+	else if (x < 0 && abs(y) <= 10)   //Spot Turn Left
+			Drive(0,1,1,0,1,0,x,y);
 
-	else if (x > 0 && abs(y) <= 20)   //Spot Turn Right
-		Drive(1, 0, 0, 1, 0, 0, 1, 0, x, y);
+	else if (x > 0 && abs(y) <= 10)   //Spot Turn Right
+			Drive(1,0,1,0,1,0,x,y);
 
-	else if (x > 0 && y < 0 && x >= abs(y))   //Octet 1
-	{
-		if (abs(x) > 4095 - abs(y))
-			Drive(1, 0, 0, 1, 0, 1, 0, 1, x, y);
-		else
-			Drive(1, 0, 1, 0, 1, 0, 1, 0, x, y);
-	}
+	else if(x > 0 && y > 0 && x > y)   //Octet 1
+		Drive(1,0,1,0,1,1,x,y);
 
-	else if (x > 0 && y < 0 && x < abs(y))   //Octet 2
-	{
-		if (abs(y) > 4095 - abs(x))
-			Drive(1, 1, 0, 0, 1, 1, 1, 0, x, y);
-		else
-			Drive(1, 1, 1, 1, 0, 0, 0, 1, x, y);
-	}
+	else if(x > 0 && y > 0 && x < y)   //Octet 2
+		Drive(1,1,0,1,1,1,x,y);
 
-	else if (x < 0 && y < 0 && abs(y) > abs(x))   //Octet 3
-	{
-		if (abs(y) > 4095 - abs(x))
-			Drive(1, 1, 1, 1, 0, 0, 0, 1, x, y);
-		else
-			Drive(1, 1, 0, 0, 1, 1, 1, 0, x, y);
-	}
+	else if(x < 0 && y > 0 && abs(x) < y)   //Octet 3
+		Drive(1,1,1,1,0,1,x,y);
 
-	else if (x < 0 && y < 0 && abs(x) >= abs(y))   //Octet 4
-	{
-		if (abs(x) > 4095 - abs(y))
-			Drive(0, 1, 1, 0, 1, 0, 1, 0, x, y);
-		else
-			Drive(0, 1, 0, 1, 0, 1, 0, 1, x, y);
-	}
+	else if(x < 0 && y > 0 && abs(x) >= y)   //Octet 4
+		Drive(0,1,1,1,1,0,x,y);
+	/**/
 
-	else if (x < 0 && y > 0 && abs(x) > abs(y))   //Octet 5
-	{
-		if (abs(x) > 4095 - abs(y))
-			Drive(0, 1, 0, 1, 0, 1, 0, 1, x, y);
-		else
-			Drive(0, 1, 1, 0, 1, 0, 1, 0, x, y);
-	}
+	else if(x < 0 && y < 0 && abs(x) > abs(y))   //Octet 5
+	 	 Drive(0,1,1,0,1,1,x,y);
 
-	else if (x < 0 && y > 0 && abs(y) >= abs(x))   //Octet 6
-	{
-		if (abs(y) > 4095 - abs(x))
-			Drive(0, 0, 0, 0, 1, 1, 1, 0, x, y);
-		else
-			Drive(0, 0, 1, 1, 0, 0, 0, 1, x, y);
-	}
+	else if(x < 0 && y < 0 && abs(x) < abs(y))   //Octet 6
+	 	 Drive(0,0,0,1,1,1,x,y);
 
-	else if (x > 0 && y > 0 && abs(y) >= abs(x))   //Octet 7
-	{
-		if (abs(y) > 4095 - abs(x))
-			Drive(0, 0, 1, 1, 0, 0, 0, 1, x, y);
-		else
-			Drive(0, 0, 0, 0, 1, 1, 1, 0, x, y);
-	}
+	else if(x > 0 && y < 0 && abs(x) < abs(y))   //Octet 7
+	 	 Drive(0,0,1,1,0,1,x,y);
 
-	else if (x > 0 && y > 0 && abs(x) > abs(y))   //Octet 8
-	{
-		if (abs(x) > 4095 - abs(y))
-			Drive(1, 0, 1, 0, 1, 0, 1, 0, x, y);
-		else
-			Drive(1, 0, 0, 1, 0, 1, 0, 1, x, y);
-	}
+	else if(x > 0 && y < 0 && abs(x) > abs(y))   //Octet 8
+	 	 Drive(0,1,1,0,1,1,x,y);
 
 	//Test Drive:
-	//Drive(1,1,0,1,0,0,0,1,x,y);
+	//Drive(1,1,1,0,0,1,x,y);
 }
 
 int main()
 {
-	SysTick_Initialize();
+	//SysTick_Initialize();
 	GPIO_Initialize();
 	Timer_Initialize();
 	ADC_Initialize();
@@ -278,7 +229,9 @@ int main()
 	{
 		x_read = read(0);   //Read mapped x co-ordinate of Joystick
 		y_read = read(1);   //Read mapped y co-ordinate of Joystick
-		
+
+
 		MotorCode(x_read, y_read);
 	}
 }
+

@@ -71,7 +71,7 @@ void Timer_Initialize()
 	TIM4->CCMR1 |= (TIM_CCMR1_OC2M_2) | (TIM_CCMR1_OC2M_1);
 	TIM4->CCMR1 &= ~(TIM_CCMR1_OC2M_0);
 
-	TIM4->PSC = 1; //freq/1 = 8 Mhz
+	TIM4->PSC = 1; //freq/1 = 72 Mhz
 	TIM4->ARR = 4095;   //16 Bit value
 	TIM4->CCR1 = 0;
 	TIM4->CCR2 = 0;
@@ -155,11 +155,17 @@ int read(int k)
 	else
 	{
 		val = mapp(val, 0, 4095, 4095, -4095);
+		if (val < -3900)
+			val = -4095;
+
+		if (val > 3900)
+			val = 4095;
 	}
 
 	if (abs(val) < 100)
 		val = 0;
-	
+
+	/*
 	if (val < -3900)
 		val = -4095;
 
@@ -183,10 +189,10 @@ void MotorCode(int x, int y)
 		Drive(1,1,0,1,0,1,x,y);
 
 	else if (x < 0 && abs(y) <= 10)   //Spot Turn Left
-			Drive(0,1,1,0,1,0,x,y);
+		Drive(0,1,1,0,1,0,x,y);
 
 	else if (x > 0 && abs(y) <= 10)   //Spot Turn Right
-			Drive(1,0,1,0,1,0,x,y);
+		Drive(1,0,1,0,1,0,x,y);
 
 	else if(x > 0 && y > 0 && x > y)   //Octet 1
 		Drive(1,0,1,0,1,1,x,y);
@@ -211,7 +217,7 @@ void MotorCode(int x, int y)
 	 	 Drive(0,0,1,1,0,1,x,y);
 
 	else if(x > 0 && y < 0 && abs(x) > abs(y))   //Octet 8
-	 	 Drive(0,1,1,0,1,1,x,y);
+	 	 Drive(1,0,1,1,1,0,x,y);
 
 	//Test Drive:
 	//Drive(1,1,1,0,0,1,x,y);
@@ -230,8 +236,8 @@ int main()
 		x_read = read(0);   //Read mapped x co-ordinate of Joystick
 		y_read = read(1);   //Read mapped y co-ordinate of Joystick
 
-
 		MotorCode(x_read, y_read);
 	}
 }
+
 
